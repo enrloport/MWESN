@@ -4,29 +4,25 @@ using Metaheuristics
 # DATASET
 dir     = "data/"
 file    = "TrainCloud.nc"
-# all     = ncread(dir*file, "__xarray_dataarray_variable__")
 
 data_train = ncread(dir*file, "__xarray_dataarray_variable__")
 file2 = "TestCloud.nc"
 data_test = ncread(dir*file2, "__xarray_dataarray_variable__")
 all = cat(data_train, data_test, dims=1)
 
-# data_train[1,:,:] == all[1,:,:]
-# data_test[1,:,:] == all[size(data_train,1) + 1 ,:,:]
-
 
 # PARAMS
-tp = (105,91)
+tp = (30,30)
 repit = 1
 _params = Dict{Symbol,Any}(
      :gpu               => true
     ,:wb                => true
     ,:confusion_matrix  => false
-    ,:wb_logger_name    => "pso_MWESN_cloudcast_pixel_48000__"*string(tp)*"_GPU"
-    ,:classes           => [0,1,2,3,4,5,6,7,8,9,10]
+    ,:wb_logger_name    => "pso_MWESN_cloudcast__pixel_"*string(tp)*"__GPU"
+    ,:classes           => [0,1,2,3]
     ,:beta              => 1.0e-8
     ,:initial_transient => 1000
-    ,:train_length      => 49000
+    ,:train_length      => 50000
     ,:test_length       => 1000
     ,:train_f           => __do_train_MWESN_cloudcast!
     ,:test_f            => __do_test_MWESN_cloudcast_pixel!
@@ -51,7 +47,7 @@ if _params[:wb] using Logging, Wandb end
 
 
 pso_dict = Dict(
-    "N"  => 20
+    "N"  => 30
     ,"C1" => 1.5
     ,"C2" => 1.2
     ,"w"  => 0.5
@@ -59,7 +55,6 @@ pso_dict = Dict(
 )
 
 function fitness(_x)
-    #_u = round.(_x)
     _u = _x
 
     _params[:layers] = [ [200 for _ in 1:5],[300,300]]
@@ -73,7 +68,6 @@ function fitness(_x)
 
     sd = 42 #rand(1:10000)
     Random.seed!(sd)
-    # _params[:layers] = [(2,300)]; sd=776; Random.seed!(sd) # error 0.2875
 
     _params_esn = Dict{Symbol,Any}(
         :R_scaling => [rand(Uniform(0.5,1.5),length(layer) ) for layer in _params[:layers]]
@@ -105,24 +99,17 @@ function fitness(_x)
 	, "Active outputs"      => _params[:active_outputs]
         )
     edges = Dict( "Edge "*string(i) => _u[i] for i in 1:length(_u) )
-    
-    if _params[:wb]
-        # _params[:lg] = wandb_logger(_params[:wb_logger_name])
-        Wandb.log(_params[:lg], merge(par,edges) )
-    end
-    display(par)
 
     tm = @elapsed begin
-        dwE = do_batch_mwesn(_params_esn,_params)
+        mwE = do_batch_mwesn(_params_esn,_params)
     end
     _params[:total_time] = tm
-    full_log(_params,_params_esn,dwE)
+    full_log(_params,_params_esn,mwE,extra=merge(par,edges))
 
     printime = _params[:gpu] ? "Time GPU: " * string(tm) :  "Time CPU: " * string(tm) 
-    println("Error: ", dwE.error, "\n", printime  )
+    println("Error: ", mwE.error, "\n", printime  )
 
-    return dwE.error[4]
-
+    return mwE.error[4]
 end
 
 
