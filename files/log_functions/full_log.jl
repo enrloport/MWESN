@@ -1,4 +1,4 @@
-function full_log(params,params_esn,mwE)
+function full_log(params,params_esn,mwE;extra=Dict())
     p,pe=params,params_esn
     to_log = Dict(
         "Total time"        => p[:total_time]
@@ -22,14 +22,13 @@ function full_log(params,params_esn,mwE)
         , "sigma" => pe[:sigma][1][1]
     )
     err_dict = Dict("Error_step_"*string(s) => mwE.error[s] for s in params[:steps] )
-    merge!(to_log,err_dict)
+    merge!(to_log,err_dict,extra)
     cls_nms = string.(p[:classes])
     if p[:wb]
         if p[:confusion_matrix]
             for stp in p[:steps]
                 to_log["conf_mat_"*string(stp)] = Wandb.wandb.plot.confusion_matrix(
                     y_true = p[:test_labels][stp], preds = [x[1] for x in mwE.Y[stp]], class_names = cls_nms
-                    # y_true = p[:test_labels][1:p[:test_length]], preds = [x[1] for x in mwE.Y], class_names = cls_nms
                 )
             end
         end
