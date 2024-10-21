@@ -11,24 +11,24 @@ _all = cat(all,all2, dims=(1))
 
 # PARAMS
 tp = (30,30)
-repit = 1000
+repit = 100
 _params = Dict{Symbol,Any}(
      :gpu               => true
-    ,:wb                => true
+    ,:wb                => false
     ,:confusion_matrix  => false
     ,:wb_logger_name    => "MWESN_cloudcast_pixel_continuous_training_"*string(tp)*"_GPU"
-    ,:classes           => [0,1,2,3,4,5,6,7,8,9,10]
+    ,:classes           => [0,1,2,3]
     ,:beta              => 1.0e-8
     ,:start_point       => 44000
     ,:initial_transient => 500
     ,:train_length      => 2000
     ,:test_length       => 1
-    ,:train_f           => __do_train_DWESN_cloudcast!
-    ,:test_f            => __do_test_DWESN_cloudcast_pixel!
+    ,:train_f           => __do_train_MWESN_cloudcast!
+    ,:test_f            => __do_test_MWESN_cloudcast_pixel!
     ,:target_pixel      => tp
     ,:radius            => 3
     ,:steps             => [1,2,3,4]
-    # ,:data              => _all
+    ,:data              => _all
 )
 _params[:input_size] = ((_params[:radius]*2)+1)^2
 
@@ -48,7 +48,6 @@ _params[:active_outputs]= [6,7]
 
 sd = 42#rand(1:10000)
 Random.seed!(sd)
-# _params[:layers] = [(2,300)]; sd=776; Random.seed!(sd) # error 0.2875
 
 _params_esn = Dict{Symbol,Any}(
     :R_scaling => [rand(Uniform(0.5,1.5),length(layer) ) for layer in _params[:layers]]
@@ -85,7 +84,7 @@ end
 display(par)
 
 
-dwE=[]
+mwE=[]
 _s, _e = _params[:start_point] + 1, _params[:start_point] + 1000
 
 global _err = 0
@@ -103,18 +102,17 @@ for t in _s:_e
         
 
     tm = @elapsed begin
-        dwE = do_batch_dwesn(_params_esn,_params)
+        mwE = do_batch_mwesn(_params_esn,_params)
     end
     _params[:total_time] = tm
-    full_log(_params,_params_esn,dwE)
+    full_log(_params,_params_esn,mwE)
 
-    if dwE.Y[4][1][1] != Int8(_params[:test_labels][4][1]) 
+    if mwE.Y[4][1][1] != Int8(_params[:test_labels][4][1]) 
         global _err += 1
     end
     printime = _params[:gpu] ? "Time GPU: " * string(tm) :  "Time CPU: " * string(tm)
     println("Time "*string(t)*", Error: ", _err, "\n", printime  )
 end
-
 
 println(global _err)
 
