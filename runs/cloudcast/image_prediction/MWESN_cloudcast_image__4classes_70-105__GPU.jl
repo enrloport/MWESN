@@ -11,13 +11,13 @@ _all = cat(all,all2, dims=(1))
 
 # PARAMS
 repit = 1
-tp = (30,30)
+tp = (70,105)
 _params = Dict{Symbol,Any}(
      :gpu               => false
     ,:wb                => false
     ,:confusion_matrix  => false
     ,:wb_logger_name    => "MWESN_cloudcast_image__GPU"
-    ,:classes           => [0,1,2,3] # No clouds, Low-clouds, Med-clouds, High-clouds
+    ,:classes           => [0,1,2,3]
     ,:beta              => 1.0e-8
     ,:initial_transient => 1000
     ,:train_length      => 52416
@@ -50,10 +50,10 @@ for _ in 1:repit
    global mwE=[]
     _params[:layers] = [ [200,200,200,200,200],[300,300]]
     _params[:connections] = Dict(
-        6 => [(1,1.0),(2,1.0),(3,1.0),(4,1.0),(5,1.0)]
-       ,7 => [(1,1.0),(2,1.0),(3,1.0),(4,1.0),(5,1.0)]
-    #    6 =>  [(1,0.92041),(2,-0.27942),(3,-1),(4,1),(5,0.76853)]
-    #   ,7 => [(1,1),(2,-1),(3,0.95453),(4,-1),(5,-0.53581)]
+    #    6 => [(1,1.0),(2,1.0),(3,1.0),(4,1.0),(5,1.0)]
+    #   ,7 => [(1,1.0),(2,1.0),(3,1.0),(4,1.0),(5,1.0)]
+        6 =>  [(1,-0.66836),(2,0.60889),(3,-0.42703),(4,0.15834),(5,-0.054281)]
+       ,7 => [(1,0.25803),(2,0.25241),(3,-0.22819),(4,-0.31517),(5,-0.3427)]
     )
     _params[:active_inputs] = [1,2,3,4,5,6,7]
     _params[:active_outputs]= [6,7]
@@ -108,7 +108,6 @@ for _ in 1:repit
     printime = _params[:gpu] ? "Time GPU: " * string(tm) :  "Time CPU: " * string(tm) 
 
 end
-
 
 using DelimitedFiles
 
