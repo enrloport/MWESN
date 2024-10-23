@@ -11,6 +11,7 @@ wandb/
 *.zip
 nohup*.out
 csv_reader.jl
+wandb_key.jl
 
 # Backup Files
 *BU.jl
