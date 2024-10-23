@@ -13,16 +13,16 @@ all = cat(data_train, data_test, dims=1)
 
 # PARAMS
 tp = (30,30)
-repit = 1
+repit = 10
 _params = Dict{Symbol,Any}(
      :gpu               => true
     ,:wb                => true
     ,:confusion_matrix  => false
     ,:wb_logger_name    => "pso_MWESN_cloudcast__pixel_"*string(tp)*"__GPU"
-    ,:classes           => [0,1,2,3]
+    ,:classes           => [0,1,2,3,4,5,6,7,8,9,10]
     ,:beta              => 1.0e-8
     ,:initial_transient => 1000
-    ,:train_length      => 50000
+    ,:train_length      => 48000
     ,:test_length       => 1000
     ,:train_f           => __do_train_MWESN_cloudcast!
     ,:test_f            => __do_test_MWESN_cloudcast_pixel!
@@ -47,7 +47,7 @@ if _params[:wb] using Logging, Wandb end
 
 
 pso_dict = Dict(
-    "N"  => 30
+    "N"  => 20
     ,"C1" => 1.5
     ,"C2" => 1.2
     ,"w"  => 0.5
@@ -66,7 +66,7 @@ function fitness(_x)
     _params[:active_inputs] = vcat( 1:7 )
     _params[:active_outputs]= [6,7]
 
-    sd = 42 #rand(1:10000)
+    sd = _params[:seed]
     Random.seed!(sd)
 
     _params_esn = Dict{Symbol,Any}(
@@ -115,6 +115,7 @@ end
 
 
 for _ in 1:repit
+    _params[:seed] = rand(1:100000)
 
     if _params[:wb]
         _params[:lg] = wandb_logger(_params[:wb_logger_name])
