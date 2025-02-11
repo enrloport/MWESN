@@ -13,10 +13,10 @@ all = cat(data_train, data_test, dims=1)
 
 # PARAMS
 tp = (30,30)
-repit = 10
+repit = 1
 _params = Dict{Symbol,Any}(
      :gpu               => true
-    ,:wb                => true
+    ,:wb                => false
     ,:confusion_matrix  => false
     ,:wb_logger_name    => "pso_MWESN_cloudcast__pixel_"*string(tp)*"__GPU"
     ,:classes           => [0,1,2,3,4,5,6,7,8,9,10]
@@ -101,15 +101,24 @@ function fitness(_x)
     edges = Dict( "Edge "*string(i) => _u[i] for i in 1:length(_u) )
 
     tm = @elapsed begin
-        mwE = do_batch_mwesn(_params_esn,_params)
+        global mwesn = new_mwesn(_params_esn,_params)
+        tm_train = @elapsed begin
+            mwesn.train_function(mwesn,_params)
+        end
+        tm_test = @elapsed begin
+            mwesn.test_function(mwesn,_params)
+        end
     end
     _params[:total_time] = tm
-    full_log(_params,_params_esn,mwE,extra=merge(par,edges))
+    _params[:train_time] = tm_train
+    _params[:test_time]  = tm_test
+
+    full_log(_params,_params_esn,mwesn,extra=merge(par,edges))
 
     printime = _params[:gpu] ? "Time GPU: " * string(tm) :  "Time CPU: " * string(tm) 
-    println("Error: ", mwE.error, "\n", printime  )
+    println("Error: ", mwesn.error, "\n", printime  )
 
-    return mwE.error[4]
+    return mwesn.error[4]
 end
 
 
