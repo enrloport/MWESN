@@ -6,11 +6,11 @@ function get_input(_esn,u,f, extra)
     return f(res)
 end
 
-function _step_cloudcast(dwE, data,f; extra_inputs = Dict())
-    for layer in dwE.layers
+function _step_cloudcast(mwesn, data,f; extra_inputs = Dict())
+    for layer in mwesn.layers
         for _esn in layer.esns
             inpt = get_input(_esn,data,f,extra_inputs )
-            conns = _esn.id in keys(dwE.connections) ? [cn[1].x .* cn[2] for cn in dwE.connections[_esn.id] if cn[2] != 0 ] : []
+            conns = _esn.id in keys(mwesn.connections) ? [cn[1].x .* cn[2] for cn in mwesn.connections[_esn.id] if cn[2] != 0 ] : []
             v = vcat(conns..., inpt)
             __update(_esn, v , f )
         end

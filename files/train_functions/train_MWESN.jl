@@ -28,23 +28,6 @@ end
 
 function __make_Rout_MWESN!(mwesn,args)
     X             = mwesn.X
-    # classes       = args[:classes]
-
-    # for stp in args[:steps]
-        # New dataset labels for each class
-        # for t in 1:args[:train_length]-args[:initial_transient]
-        #     lt = args[:train_labels][stp][t+args[:initial_transient]]
-        #     for c in classes
-        #         y = lt == c ? 1.0 : 0.0
-        #         classes_Yt[c][t] = y
-        #     end
-        # end
-        # if args[:gpu]
-        #     classes_Yt = Dict( k => CuArray(classes_Yt[k]) for k in keys(classes_Yt) )
-        # end
-        # cudamatrix              = args[:gpu] ? CuArray : Matrix
-        # mwesn.classes_Routs[stp]  = Dict( c => cudamatrix(transpose((X*transpose(X) + mwesn.beta*I) \ (X*classes_Yt[c]))) for c in classes )
-    # end
 
     cudamatrix                  = args[:gpu] ? CuArray : Matrix
 
