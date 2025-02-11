@@ -38,10 +38,8 @@ if _params[:wb] using Logging, Wandb end
 
 _params[:layers] = [ [200,200,200,200,200],[300,300]]
 _params[:connections] = Dict(
-    6 => [(i,1.0) for i in 1:5]
-    ,7 => [(i,1.0) for i in 1:5]
-#    6 => [(1,0.842),(2,1.0),(3,0.121),(4,0.5652),(5,1.0)]
-#   ,7 => [(1,-0.7734),(2,-1.0),(3,0.6085),(4,-0.05637),(5,0.2123)]
+    6 => [(1,0.842),(2,1.0),(3,0.121),(4,0.5652),(5,1.0)]
+    ,7 => [(1,-0.7734),(2,-1.0),(3,0.6085),(4,-0.05637),(5,0.2123)]
 )
 _params[:active_inputs] = [1,2,3,4,5,6,7]
 _params[:active_outputs]= [6,7]
@@ -61,30 +59,30 @@ _params_esn = Dict{Symbol,Any}(
 
 par = Dict(
     "Seed"                => sd
-  , "Total nodes"         => sum( map(x -> sum(x), _params[:layers] ) )
-  , "Layers"              => _params[:layers]
-  , "Train length"        => _params[:train_length]
-  , "Test length"         => _params[:test_length]
-  , "Target pixel"        => _params[:target_pixel]
-  , "Radius"              => _params[:radius]
-  , "Initial transient"   => _params[:initial_transient]
-  , "start_point"         => _params[:start_point]
-  , "Sigmoids"            => _params_esn[:sgmds]
-  , "Alphas"              => _params_esn[:alpha]
-  , "Densities"           => _params_esn[:density]
-  , "R_in_densities"      => _params_esn[:Rin_dens]
-  , "Rhos"                => _params_esn[:rho]
-  , "Sigmas"              => _params_esn[:sigma]
-  , "R_scalings"          => _params_esn[:R_scaling]
+    , "Total nodes"         => sum( map(x -> sum(x), _params[:layers] ) )
+    , "Layers"              => _params[:layers]
+    , "Train length"        => _params[:train_length]
+    , "Test length"         => _params[:test_length]
+    , "Target pixel"        => _params[:target_pixel]
+    , "Radius"              => _params[:radius]
+    , "Initial transient"   => _params[:initial_transient]
+    , "start_point"         => _params[:start_point]
+    , "Sigmoids"            => _params_esn[:sgmds]
+    , "Alphas"              => _params_esn[:alpha]
+    , "Densities"           => _params_esn[:density]
+    , "R_in_densities"      => _params_esn[:Rin_dens]
+    , "Rhos"                => _params_esn[:rho]
+    , "Sigmas"              => _params_esn[:sigma]
+    , "R_scalings"          => _params_esn[:R_scaling]
   )
 if _params[:wb]
-  _params[:lg] = wandb_logger(_params[:wb_logger_name])
-  Wandb.log(_params[:lg], par )
+    _params[:lg] = wandb_logger(_params[:wb_logger_name])
+    Wandb.log(_params[:lg], par )
 end
 display(par)
 
 
-mwE=[]
+mwesn=[]
 _s, _e = _params[:start_point] + 1, _params[:start_point] + 1000
 
 global _err = 0
@@ -102,12 +100,21 @@ for t in _s:_e
         
 
     tm = @elapsed begin
-        mwE = do_batch_mwesn(_params_esn,_params)
+        global mwesn = new_mwesn(_params_esn,_params)
+        tm_train = @elapsed begin
+            mwesn.train_function(mwesn,_params)
+        end
+        tm_test = @elapsed begin
+            mwesn.test_function(mwesn,_params)
+        end
     end
     _params[:total_time] = tm
-    full_log(_params,_params_esn,mwE)
+    _params[:train_time] = tm_train
+    _params[:test_time]  = tm_test
 
-    if mwE.Y[4][1][1] != Int8(_params[:test_labels][4][1]) 
+    full_log(_params,_params_esn,mwesn)
+
+    if mwesn.Y[4][1][1] != Int8(_params[:test_labels][4][1]) 
         global _err += 1
     end
     printime = _params[:gpu] ? "Time GPU: " * string(tm) :  "Time CPU: " * string(tm)
