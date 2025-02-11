@@ -45,13 +45,11 @@ if _params[:gpu] CUDA.allowscalar(false) end
 if _params[:wb] using Logging, Wandb end
 
 
-global mwE=[]
+global mwesn=[]
 for _ in 1:repit
-   global mwE=[]
+   global mwesn=[]
     _params[:layers] = [ [200,200,200,200,200],[300,300]]
     _params[:connections] = Dict(
-    #    6 => [(1,1.0),(2,1.0),(3,1.0),(4,1.0),(5,1.0)]
-    #   ,7 => [(1,1.0),(2,1.0),(3,1.0),(4,1.0),(5,1.0)]
         6 =>  [(1,-0.66836),(2,0.60889),(3,-0.42703),(4,0.15834),(5,-0.054281)]
        ,7 => [(1,0.25803),(2,0.25241),(3,-0.22819),(4,-0.31517),(5,-0.3427)]
     )
@@ -95,10 +93,19 @@ for _ in 1:repit
     display(par)
 
     tm = @elapsed begin
-        global mwE = do_batch_mwesn(_params_esn,_params)
+        global mwesn = new_mwesn(_params_esn,_params)
+        tm_train = @elapsed begin
+            mwesn.train_function(mwesn,_params)
+        end
+        tm_test = @elapsed begin
+            mwesn.test_function(mwesn,_params)
+        end
     end
     _params[:total_time] = tm
-    full_log(_params,_params_esn,mwE)
+    _params[:train_time] = tm_train
+    _params[:test_time]  = tm_test
+
+    full_log(_params,_params_esn,mwesn)
 
     if _params[:wb]
         close(_params[:lg])
@@ -112,7 +119,7 @@ using DelimitedFiles
 
 _t = _params[:train_length] + _params[:test_length]
 for h in _params[:steps]
-    writedlm( "mresn_cloudcast_4classes_image__"*string(tp)*"__full__"*string(_t)*"+"*string(h)*".csv",  mwE.error[h], ',')
+    writedlm( "mresn_cloudcast_4classes_image__"*string(tp)*"__full__"*string(_t)*"+"*string(h)*".csv",  mwesn.error[h], ',')
 end
 
 # EOF
