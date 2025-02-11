@@ -43,9 +43,9 @@ _params[:train_data],  _params[:train_labels],  _params[:test_data],  _params[:t
 if _params[:gpu] CUDA.allowscalar(false) end
 if _params[:wb] using Logging, Wandb end
 
-dwE=[]
+mwesn=[]
 for _ in 1:repit
-    dwE=[]
+    mwesn=[]
     _params[:layers] = [ [200,200,200,200,200],[300,300]]
     _params[:connections] = Dict(
     #     6 => [(i,1.0) for i in 1:5]
@@ -98,20 +98,27 @@ for _ in 1:repit
     display(par)
 
     tm = @elapsed begin
-        dwE = do_batch_mwesn(_params_esn,_params)
+        global mwesn = new_mwesn(_params_esn,_params)
+        tm_train = @elapsed begin
+            mwesn.train_function(mwesn,_params)
+        end
+        tm_test = @elapsed begin
+            mwesn.test_function(mwesn,_params)
+        end
     end
     _params[:total_time] = tm
-    full_log(_params,_params_esn,dwE)
+    _params[:train_time] = tm_train
+    _params[:test_time]  = tm_test
+
+    full_log(_params,_params_esn,mwesn)
 
     if _params[:wb]
         close(_params[:lg])
     end
 
     printime = _params[:gpu] ? "Time GPU: " * string(tm) :  "Time CPU: " * string(tm) 
-    println("\n\n TP: ",_params[:target_pixel],"\nError: ", dwE.error, "\n", printime  )
+    println("\n\n TP: ",_params[:target_pixel],"\nError: ", mwesn.error, "\n", printime  )
 
 end
 
 # EOF
-
-
