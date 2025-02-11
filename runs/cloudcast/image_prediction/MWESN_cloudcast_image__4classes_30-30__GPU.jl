@@ -45,22 +45,19 @@ if _params[:gpu] CUDA.allowscalar(false) end
 if _params[:wb] using Logging, Wandb end
 
 
-global mwE=[]
+global mwesn=[]
 for _ in 1:repit
-   global mwE=[]
+   global mwesn=[]
     _params[:layers] = [ [200,200,200,200,200],[300,300]]
     _params[:connections] = Dict(
-        6 => [(1,1.0),(2,1.0),(3,1.0),(4,1.0),(5,1.0)]
-       ,7 => [(1,1.0),(2,1.0),(3,1.0),(4,1.0),(5,1.0)]
-    #    6 =>  [(1,0.92041),(2,-0.27942),(3,-1),(4,1),(5,0.76853)]
-    #   ,7 => [(1,1),(2,-1),(3,0.95453),(4,-1),(5,-0.53581)]
+       6 =>  [(1,0.92041),(2,-0.27942),(3,-1),(4,1),(5,0.76853)]
+      ,7 => [(1,1),(2,-1),(3,0.95453),(4,-1),(5,-0.53581)]
     )
     _params[:active_inputs] = [1,2,3,4,5,6,7]
     _params[:active_outputs]= [6,7]
 
     sd = 42 #rand(1:10000)
     Random.seed!(sd)
-    # _params[:layers] = [(2,300)]; sd=776; Random.seed!(sd) # error 0.2875
 
     _params_esn = Dict{Symbol,Any}(
         :R_scaling => [rand(Uniform(0.5,1.5),length(layer) ) for layer in _params[:layers]]
@@ -96,10 +93,19 @@ for _ in 1:repit
     display(par)
 
     tm = @elapsed begin
-        global mwE = do_batch_mwesn(_params_esn,_params)
+        global mwesn = new_mwesn(_params_esn,_params)
+        tm_train = @elapsed begin
+            mwesn.train_function(mwesn,_params)
+        end
+        tm_test = @elapsed begin
+            mwesn.test_function(mwesn,_params)
+        end
     end
     _params[:total_time] = tm
-    full_log(_params,_params_esn,mwE)
+    _params[:train_time] = tm_train
+    _params[:test_time]  = tm_test
+
+    full_log(_params,_params_esn,mwesn)
 
     if _params[:wb]
         close(_params[:lg])
@@ -109,13 +115,12 @@ for _ in 1:repit
 
 end
 
-
 using DelimitedFiles
 
-
 _t = _params[:train_length] + _params[:test_length]
+
 for h in _params[:steps]
-    writedlm( "mresn_cloudcast_4classes_image__"*string(tp)*"__full__"*string(_t)*"+"*string(h)*".csv",  mwE.error[h], ',')
+    writedlm( "mresn_cloudcast_4classes_image__"*string(tp)*"__full__"*string(_t)*"+"*string(h)*".csv",  mwesn.error[h], ',')
 end
 
 # EOF
