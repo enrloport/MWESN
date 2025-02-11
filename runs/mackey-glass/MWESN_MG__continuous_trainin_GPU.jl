@@ -15,7 +15,7 @@ _params = Dict{Symbol,Any}(
     ,:confusion_matrix  => false
     ,:wb_logger_name    => "ESN_MG_continuous_training_CPU"
     ,:beta              => 1.0e-8
-    ,:start_point       => 1990
+    ,:start_point       => 1998
     ,:initial_transient => 100
     ,:train_length      => 2000
     ,:test_length       => 2000
@@ -73,8 +73,8 @@ end
 display(par)
 
 
-mwE=[]
-_s, _e = _params[:start_point] + 1, _params[:start_point] + 10
+mwesn=[]
+_s, _e = _params[:start_point] + 1, _params[:start_point] + 2
 
 it, trl, tel = _params[:initial_transient], _params[:train_length], _params[:test_length]
 
@@ -84,24 +84,24 @@ _params[:test_data]     = _params[:data][trl+1:trl+tel ]
 _params[:test_labels]   = _params[:data][trl+2:trl+tel+1]
 
 
-include("../../ESN.jl")
+# include("../../ESN.jl")
 for t in _s:_e
     tm = @elapsed begin
-        mwE = do_batch_mwesn(_params_esn,_params)
+        mwesn = new_mwesn(_params_esn,_params)
     end
     _params[:total_time] = tm
+
+    tm_train = @elapsed begin
+        mwesn.train_function(mwesn,_params)
+    end
+    tm_test = @elapsed begin
+        mwesn.test_function(mwesn,_params)
+    end
+    _params[:train_time],_params[:test_time] = tm_train, tm_test
     
     printime = _params[:gpu] ? "Time GPU: " * string(tm) :  "Time CPU: " * string(tm)
-    println("Time "*string(t)*", Error: ", mwE.error[1], "\n", printime  )
+    println("Time "*string(t)*", Error: ", mwesn.error[1], "\n", printime  )
 end
-
-# println(_err)
-
-# par["Error"] = _err
-# if _params[:wb]
-#   _params[:lg] = wandb_logger(_params[:wb_logger_name])
-#   Wandb.log(_params[:lg], par )
-# end
 
 
 if _params[:wb]
