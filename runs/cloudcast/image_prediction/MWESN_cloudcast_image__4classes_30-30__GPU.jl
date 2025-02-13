@@ -84,7 +84,7 @@ for _ in 1:repit
         , "W_in_densities"      => _params_esn[:Win_dens]
         , "Rhos"                => _params_esn[:rho]
         , "Sigmas"              => _params_esn[:sigma]
-        , "W_scalings"          => _params_esn[:R_scaling]
+        , "W_scalings"          => _params_esn[:W_scaling]
         )
     if _params[:wb]
         _params[:lg] = wandb_logger(_params[:wb_logger_name])

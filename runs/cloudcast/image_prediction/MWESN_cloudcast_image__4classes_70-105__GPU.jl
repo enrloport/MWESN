@@ -13,7 +13,7 @@ _all = cat(all,all2, dims=(1))
 repit = 1
 tp = (70,105)
 _params = Dict{Symbol,Any}(
-     :gpu               => false
+     :gpu               => true
     ,:wb                => false
     ,:confusion_matrix  => false
     ,:wb_logger_name    => "MWESN_cloudcast_image__GPU"
