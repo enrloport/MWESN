@@ -1,4 +1,4 @@
-function __fill_X_MWESN_cloudcast!(mwesn, args::Dict )
+function __fill_H_MWESN_cloudcast!(mwesn, args::Dict )
 
     f     = args[:gpu] ? (u) -> CuArray(u) : (u) -> u
     td    = args[:train_data]
@@ -22,13 +22,13 @@ function __fill_X_MWESN_cloudcast!(mwesn, args::Dict )
         states          = [ _e.x for l in mwesn.layers for _e in l.esns if _e.output_active]
         constant_term   = f([1])
 
-        mwesn.X[:,t_in] = vcat(input, extra_inputs... , states...  , constant_term )
+        mwesn.H[:,t_in] = vcat(input, extra_inputs... , states...  , constant_term )
     end
 end
 
 
-function __make_Rout_MWESN_cloudcast!(mwesn,args)
-    X             = mwesn.X
+function __make_Wout_MWESN_cloudcast!(mwesn,args)
+    H             = mwesn.H
     classes       = args[:classes]
 
     for stp in args[:steps]
@@ -46,7 +46,7 @@ function __make_Rout_MWESN_cloudcast!(mwesn,args)
         end
 
         cudamatrix              = args[:gpu] ? CuArray : Matrix
-        mwesn.classes_Routs[stp]  = Dict( c => cudamatrix(transpose((X*transpose(X) + mwesn.beta*I) \ (X*classes_Yt[c]))) for c in classes )
+        mwesn.classes_Wouts[stp]  = Dict( c => cudamatrix(transpose((H*transpose(H) + mwesn.beta*I) \ (H*classes_Yt[c]))) for c in classes )
     end
 
 end
@@ -55,17 +55,17 @@ end
 function __do_train_MWESN_cloudcast!(mwesn, args)
     num               = args[:train_length]-args[:initial_transient]
     extra_size        = :extra_data_size in keys(args) ? sum(args[:extra_data_size]) : 0
-    mwesn.X             = zeros( mwesn.output_size + args[:input_size] + extra_size + 1, num)
+    mwesn.H             = zeros( mwesn.output_size + args[:input_size] + extra_size + 1, num)
     reset_function    = (x) -> zeros(x,1)
 
     if args[:gpu]
-        mwesn.X             = CuArray(mwesn.X)
+        mwesn.H             = CuArray(mwesn.H)
         reset_function    = (x) -> CuArray(zeros(x,1))
     end
 
     # reset states
-    map(_e -> _e.x = reset_function(_e.R_size) , values(mwesn.esns) )
+    map(_e -> _e.x = reset_function(_e.W_size) , values(mwesn.esns) )
 
-    __fill_X_MWESN_cloudcast!(mwesn,args)
-    __make_Rout_MWESN_cloudcast!(mwesn,args)
+    __fill_H_MWESN_cloudcast!(mwesn,args)
+    __make_Wout_MWESN_cloudcast!(mwesn,args)
 end

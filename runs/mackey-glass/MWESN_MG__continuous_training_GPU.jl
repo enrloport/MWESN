@@ -41,10 +41,10 @@ sd = 42#rand(1:10000)
 Random.seed!(sd)
 
 _params_esn = Dict{Symbol,Any}(
-    :R_scaling => [rand(Uniform(0.5,1.5),length(layer) ) for layer in _params[:layers]]
+    :W_scaling => [rand(Uniform(0.5,1.5),length(layer) ) for layer in _params[:layers]]
     ,:alpha    => [rand(Uniform(0.3,0.7),length(layer) ) for layer in _params[:layers]]
     ,:density  => [rand(Uniform(0.1,0.3),length(layer) ) for layer in _params[:layers]]
-    ,:Rin_dens => [rand(Uniform(0.1,0.5),length(layer) ) for layer in _params[:layers]]
+    ,:Win_dens => [rand(Uniform(0.1,0.5),length(layer) ) for layer in _params[:layers]]
     ,:rho      => [rand(Uniform(1.0,4.0),length(layer) ) for layer in _params[:layers]]
     ,:sigma    => [rand(Uniform(0.5,1.5),length(layer) ) for layer in _params[:layers]]
     ,:sgmds    => [ [tanh for _ in 1:length(_params[:layers][i])] for i in 1:length(_params[:layers]) ]
@@ -61,10 +61,10 @@ par = Dict(
   , "Sigmoids"            => _params_esn[:sgmds]
   , "Alphas"              => _params_esn[:alpha]
   , "Densities"           => _params_esn[:density]
-  , "R_in_densities"      => _params_esn[:Rin_dens]
+  , "W_in_densities"      => _params_esn[:Win_dens]
   , "Rhos"                => _params_esn[:rho]
   , "Sigmas"              => _params_esn[:sigma]
-  , "R_scalings"          => _params_esn[:R_scaling]
+  , "W_scalings"          => _params_esn[:W_scaling]
   )
 if _params[:wb]
   _params[:lg] = wandb_logger(_params[:wb_logger_name])
@@ -74,7 +74,7 @@ display(par)
 
 
 mwesn=[]
-_s, _e = _params[:start_point] + 1, _params[:start_point] + 2
+# _s, _e = _params[:start_point] + 1, _params[:start_point] + 2
 
 it, trl, tel = _params[:initial_transient], _params[:train_length], _params[:test_length]
 
@@ -84,24 +84,27 @@ _params[:test_data]     = _params[:data][trl+1:trl+tel ]
 _params[:test_labels]   = _params[:data][trl+2:trl+tel+1]
 
 
-# include("../../ESN.jl")
-for t in _s:_e
-    tm = @elapsed begin
-        mwesn = new_mwesn(_params_esn,_params)
-    end
-    _params[:total_time] = tm
-
-    tm_train = @elapsed begin
-        mwesn.train_function(mwesn,_params)
-    end
-    tm_test = @elapsed begin
-        mwesn.test_function(mwesn,_params)
-    end
-    _params[:train_time],_params[:test_time] = tm_train, tm_test
-    
-    printime = _params[:gpu] ? "Time GPU: " * string(tm) :  "Time CPU: " * string(tm)
-    println("Time "*string(t)*", Error: ", mwesn.error[1], "\n", printime  )
+tm = @elapsed begin
+    mwesn = new_mwesn(_params_esn,_params)
 end
+
+tm_train = @elapsed begin
+    mwesn.train_function(mwesn,_params)
+end
+
+tm_test = @elapsed begin
+    mwesn.test_function(mwesn,_params)
+end
+
+_params[:train_time],_params[:test_time], _params[:total_time] = tm_train, tm_test, (tm_train + tm_test + tm)
+
+# mwesn.error[1] = mean( (mwesn.test_labels - mwesn.test_predictions).^2 )
+mean( (mwesn.Y_target .- mwesn.Y).^2 )
+
+plot([mwesn.Y_target[1:200], mwesn.Y[1:200]])
+
+printime = _params[:gpu] ? "Time GPU: " * string(tm) :  "Time CPU: " * string(tm)
+println("Time "*string(tm)*", Error: ", mwesn.error[1], "\n", printime  )
 
 
 if _params[:wb]

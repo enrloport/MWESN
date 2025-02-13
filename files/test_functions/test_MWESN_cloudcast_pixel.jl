@@ -10,22 +10,18 @@ function __do_test_MWESN_cloudcast_pixel!(mwE, args::Dict)
 
     for t in 1:test_length
         ut = reshape(args[:test_data][t,:,:], :, 1)
-        
         _step_cloudcast(mwE,  ut, f; extra_inputs = at(tde,t))
-
 
         input           = f(ut)
         extra_inputs    = keys(tde) != [] ? [ tde[k][t] for k in keys(tde) ] : []
         states          = [ _e.x for l in mwE.layers for _e in l.esns if _e.output_active]
         constant_term   = f([1])
         x               = vcat(input, extra_inputs... , states...  , constant_term )
-
-        # x       = vcat(f(args[:test_data][t,:,:]), [ _e.x for l in mwE.layers for _e in l.esns if _e.output_active]...  , f([1]) )
-        pairs   = Dict( stp => [] for stp in args[:steps])
+        pairs           = Dict( stp => [] for stp in args[:steps])
 
         for stp in args[:steps]
             for c in args[:classes]
-                yc = Array(mwE.classes_Routs[stp][c] * x)[1]
+                yc = Array(mwE.classes_Wouts[stp][c] * x)[1]
                 push!(pairs[stp], (yc, c, args[:test_labels][stp][t]))
             end
 

@@ -45,7 +45,7 @@ function __do_test_MWESN_cloudcast_image!(mwE, args::Dict)
 
                 for stp in args[:steps]
                     for c in args[:classes]
-                        yc = Array(mwE.classes_Routs[stp][c] * x)[1]
+                        yc = Array(mwE.classes_Wouts[stp][c] * x)[1]
                         push!(pairs[stp], (yc, c, args[:test_labels][stp][t]))
                     end
 

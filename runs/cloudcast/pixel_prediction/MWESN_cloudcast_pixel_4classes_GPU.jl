@@ -65,10 +65,10 @@ for _ in 1:repit
     # _params[:layers] = [(2,300)]; sd=776; Random.seed!(sd) # error 0.2875
 
     _params_esn = Dict{Symbol,Any}(
-        :R_scaling => [rand(Uniform(0.5,1.5),length(layer) ) for layer in _params[:layers]]
+        :W_scaling => [rand(Uniform(0.5,1.5),length(layer) ) for layer in _params[:layers]]
         ,:alpha    => [rand(Uniform(0.3,0.7),length(layer) ) for layer in _params[:layers]]
         ,:density  => [rand(Uniform(0.1,0.3),length(layer) ) for layer in _params[:layers]]
-        ,:Rin_dens => [rand(Uniform(0.1,0.5),length(layer) ) for layer in _params[:layers]]
+        ,:Win_dens => [rand(Uniform(0.1,0.5),length(layer) ) for layer in _params[:layers]]
         ,:rho      => [rand(Uniform(1.0,4.0),length(layer) ) for layer in _params[:layers]]
         ,:sigma    => [rand(Uniform(0.5,1.5),length(layer) ) for layer in _params[:layers]]
         ,:sgmds    => [ [tanh for _ in 1:length(_params[:layers][i])] for i in 1:length(_params[:layers]) ]
@@ -86,10 +86,10 @@ for _ in 1:repit
         , "Sigmoids"            => _params_esn[:sgmds]
         , "Alphas"              => _params_esn[:alpha]
         , "Densities"           => _params_esn[:density]
-        , "R_in_densities"      => _params_esn[:Rin_dens]
+        , "W_in_densities"      => _params_esn[:Win_dens]
         , "Rhos"                => _params_esn[:rho]
         , "Sigmas"              => _params_esn[:sigma]
-        , "R_scalings"          => _params_esn[:R_scaling]
+        , "W_scalings"          => _params_esn[:W_scaling]
         )
     if _params[:wb]
         _params[:lg] = wandb_logger(_params[:wb_logger_name])
