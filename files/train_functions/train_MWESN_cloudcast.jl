@@ -7,7 +7,7 @@ function __fill_H_MWESN_cloudcast!(mwesn, args::Dict )
 
     for t in 1:args[:initial_transient]
         ut = reshape(td[t,:,:], :, 1)
-        _step_cloudcast(mwesn,  ut, f; extra_inputs = at(tde,t))
+        _step(mwesn,  ut, f; extra_inputs = at(tde,t))
     end
 
 
@@ -15,7 +15,7 @@ function __fill_H_MWESN_cloudcast!(mwesn, args::Dict )
         t_in    = t - args[:initial_transient]
         ut      = reshape(td[t,:,:], :, 1)
 
-        _step_cloudcast(mwesn, ut, f; extra_inputs = at(tde,t))
+        _step(mwesn, ut, f; extra_inputs = at(tde,t))
 
         input           = f(ut)
         extra_inputs    = keys(tde) != [] ? [ tde[k][t] for k in keys(tde) ] : []

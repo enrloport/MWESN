@@ -9,7 +9,7 @@ function __do_test_MWESN!(mwesn, args::Dict)
 
 
     ut = reshape(args[:test_data][1,:,:], :, 1)
-    _step_cloudcast(mwesn,  ut, f; extra_inputs = at(tde,1))
+    _step(mwesn,  ut, f; extra_inputs = at(tde,1))
     input           = f(ut)
     extra_inputs    = keys(tde) != [] ? [ tde[k][1] for k in keys(tde) ] : []
     states          = [ _e.x for l in mwesn.layers for _e in l.esns if _e.output_active]
@@ -21,7 +21,7 @@ function __do_test_MWESN!(mwesn, args::Dict)
 
     for t in 1:test_length-1
         ut = y
-        _step_cloudcast(mwesn,  ut, f; extra_inputs = at(tde,t))
+        _step(mwesn,  ut, f; extra_inputs = at(tde,t))
 
         input           = f(ut)
         extra_inputs    = keys(tde) != [] ? [ tde[k][t] for k in keys(tde) ] : []

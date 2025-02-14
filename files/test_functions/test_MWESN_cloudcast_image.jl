@@ -34,12 +34,12 @@ function __do_test_MWESN_cloudcast_image!(mwE, args::Dict)
 
             for it in sz_train-(2*i_t):sz_train
                 ut = reshape(args[:train_data][it,:,:], :, 1)
-                _step_cloudcast(mwE, ut, f)
+                _step(mwE, ut, f)
             end
 
             for t in 1:test_length
                 ut      = reshape(args[:test_data][t,:,:], :, 1)
-                _step_cloudcast(mwE, ut, f)
+                _step(mwE, ut, f)
                 x       = vcat(f(args[:test_data][t,:,:]), [ _e.x for l in mwE.layers for _e in l.esns if _e.output_active]...  , f([1]) )
                 pairs   = Dict( stp => [] for stp in args[:steps])
 

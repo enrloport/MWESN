@@ -6,7 +6,7 @@ function get_input(_esn,u,f, extra)
     return f(res)
 end
 
-function _step_cloudcast(mwesn, data,f; extra_inputs = Dict())
+function _step(mwesn, data,f; extra_inputs = Dict())
     for layer in mwesn.layers
         for _esn in layer.esns
             inpt = get_input(_esn,data,f,extra_inputs )
