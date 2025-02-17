@@ -28,10 +28,8 @@ end
 
 function __make_Wout_MWESN!(mwesn,args)
     H             = mwesn.H
-
-    cudamatrix                  = args[:gpu] ? CuArray : Matrix
-
-    mwesn.W_out    = cudamatrix(transpose((H*transpose(H) + mwesn.beta*I) \ (H*args[:train_labels])))
+    cudamatrix    = args[:gpu] ? CuArray : Matrix
+    mwesn.W_out   = cudamatrix(transpose((H*transpose(H) + mwesn.beta*I) \ (H*args[:train_labels])))
 end
 
 
