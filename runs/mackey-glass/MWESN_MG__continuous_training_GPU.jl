@@ -72,25 +72,18 @@ if _params[:wb]
   Wandb.log(_params[:lg], par )
 end
 
-mwesn=[]
-
-Random.seed!(sd)
-tm = @elapsed begin
-    mwesn = new_mwesn(_params_esn,_params)
-end
 
 
 Random.seed!(sd)
-tm = @elapsed begin
-    mwesn2 = new_mwesn(_params_esn,_params)
-end
+mwesn = new_mwesn(_params_esn,_params)
+Random.seed!(sd)
+mwesn2 = new_mwesn(_params_esn,_params)
+Random.seed!(sd)
+mwesn3 = new_mwesn(_params_esn,_params)
 
-tm_train = @elapsed begin
-    mwesn.train_function(mwesn,_params)
-end
-tm_train = @elapsed begin
-    mwesn2.train_function(mwesn2,_params)
-end
+mwesn.train_function(mwesn,_params)
+mwesn2.train_function(mwesn2,_params)
+mwesn3.train_function(mwesn3,_params)
 
 function new_wout(mwesn,i,j)
     H             = mwesn.H[:,i:j]
@@ -103,24 +96,30 @@ for i in 1:380:1900
     nw = new_wout(mwesn,i,i+379  )
     push!(wouts,nw)
 end
+
 mean_wout = mean(wouts[:,1])
 mwesn2.W_out = mean_wout
+mwesn3.W_out = wouts[1,1]
 
-tm_test = @elapsed begin
-    mwesn.test_function(mwesn,_params)
-end
-tm_test2 = @elapsed begin
-    mwesn2.test_function(mwesn2,_params)
-end
+mwesn.test_function(mwesn,_params)
+mwesn2.test_function(mwesn2,_params)
+mwesn3.test_function(mwesn3,_params)
 
-_params[:train_time],_params[:test_time], _params[:total_time] = tm_train, tm_test, (tm_train + tm_test + tm)
 
 # mwesn.error[1] = mean( (mwesn.test_labels - mwesn.test_predictions).^2 )
 mean1 = mean( (mwesn.Y_target .- mwesn.Y).^2 )
 mean2 = mean( (mwesn2.Y_target .- mwesn2.Y).^2 )
-display(mean1)
-display(mean2)
-plot([mwesn.Y_target[1:500], mwesn.Y[1:500], mwesn2.Y[1:500]], label=["Target" "Entrenamiento estandar" "Entrenamiento secuencial"], title="Mackey Glass")
+mean3 = mean( (mwesn3.Y_target .- mwesn3.Y).^2 )
+
+es = "Entrenamiento estandar. Error medio - "*string(round(mean1, digits=5))
+esec = "Entrenamiento secuencial. Error medio - "*string(round(mean2, digits=5))
+er = "Entrenamiento reducido. Error medio - "*string(round(mean3, digits=5))
+
+plot([mwesn.Y_target, mwesn.Y, mwesn2.Y, mwesn3.Y]
+    # ,palette=cgrad([:black,:yellow,:red,:blue])
+    ,xlim=(700,1002)
+    ,label=["Señal original" es esec er]
+    ,title="Mackey Glass")
 
 if _params[:wb]
     close(_params[:lg])
