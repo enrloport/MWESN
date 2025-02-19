@@ -73,7 +73,7 @@ if _params[:wb]
 end
 
 
-# function all( batch)
+function all(b)
     mwesn,mwesn2,mwesn3 = [],[],[]
 
     Random.seed!(sd)
@@ -94,7 +94,7 @@ end
     end
 
     wouts = []
-    batch = 125
+    batch = b
     for i in 1:batch:_params[:train_length]-_params[:initial_transient]
         nw = new_wout(mwesn,i,i+batch-1  )
         push!(wouts,nw)
@@ -118,15 +118,28 @@ end
     esec = "Entrenamiento secuencial. Error medio - "*string(round(mean2, digits=5))
     er = "Entrenamiento reducido. Error medio - "*string(round(mean3, digits=5))
 
-    _plot = plot([mwesn.Y_target, mwesn.Y, mwesn2.Y, mwesn3.Y]
+
+    function do_plot()
+        _p = plot([mwesn.Y_target]
+            ,linewidth=1
+            ,linestyle=:dash
+            ,label=["Señal original"]
+            )
+
+        plot!([mwesn.Y, mwesn2.Y, mwesn3.Y]
         # ,palette=cgrad([:black,:yellow,:red,:blue])
-        ,xlim=(0,50)
-        ,ylim=(-1.5, 1.5)
-        ,label=["Señal original" es esec er]
+        ,ylim=(-2.0, 3.1)
+        ,label=[es esec er]
+        ,legend=:bottomright
         ,title="Mackey Glass")
 
-    display(_plot)
-# end
+        lens!([0,50],[-1.3,1.0],inset=(1,bbox(0.15,0.0,0.3,0.4)))
+        lens!([750,1002],[-0.6,0.4],inset=(1,bbox(0.65,0.0,0.3,0.4)))
+        return _p
+    end
+
+    do_plot()
+end
 
 
 all(125)
@@ -136,15 +149,5 @@ if _params[:wb]
     close(_params[:lg])
 end
 
-
-# _params_esn = Dict{Symbol,Any}(
-#     :W_scaling => [rand(Uniform(0.5,1.5),length(layer) ) for layer in _params[:layers]]
-#     ,:alpha    => [rand(Uniform(0.3,0.7),length(layer) ) for layer in _params[:layers]]
-#     ,:density  => [rand(Uniform(0.1,0.3),length(layer) ) for layer in _params[:layers]]
-#     ,:Win_dens => [rand(Uniform(0.1,0.5),length(layer) ) for layer in _params[:layers]]
-#     ,:rho      => [rand(Uniform(1.0,4.0),length(layer) ) for layer in _params[:layers]]
-#     ,:sigma    => [rand(Uniform(0.5,1.5),length(layer) ) for layer in _params[:layers]]
-#     ,:sgmds    => [ [tanh for _ in 1:length(_params[:layers][i])] for i in 1:length(_params[:layers]) ]
-# )
 
 # EOF
