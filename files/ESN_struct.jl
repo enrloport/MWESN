@@ -14,7 +14,7 @@ Base.@kwdef mutable struct ESN
     rho                 ::Float64   = 1.0
     sigma               ::Float64   = 1.0
     sgmd                ::Function  = tanh
-    F_in                ::Function  = (f,u) -> W_in * f(u)
+    F_in                ::Function  = (f,u) -> W_in * [1;f(u)]
     input_active        ::Bool      = true
     output_active       ::Bool      = true
     additional_inputs   ::Vector    = []
