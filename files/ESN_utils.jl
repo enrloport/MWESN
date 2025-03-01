@@ -114,12 +114,13 @@ function unweighted_digraph_R(R::Mtx)
 end
 
 
-function transform_mnist(train_x, sz, trl)
-    trx = map(x-> x > 0.3 ? 1.0 : x > 0.0 ? 0.5 : 0, train_x)
-    trx = mapslices(
-        x-> imresize(x[ vec(mapslices(col -> any(col .!= 0), x, dims = 2)), vec(mapslices(col -> any(col .!= 0), x, dims = 1))], sz), train_x[:,:,1:trl] ,dims=(1,2)
+function transform_mnist(data, new_size)
+    aux = map(x-> x > 0.3 ? 1.0 : x > 0.0 ? 0.5 : 0, data)
+    aux = mapslices(
+        x-> imresize(x,new_size), aux ,dims=(1,2)
     )
-    return trx
+    aux = permutedims(aux, [3,1,2])
+    return aux
 end
 
 
