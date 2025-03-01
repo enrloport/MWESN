@@ -7,12 +7,9 @@ using MLDatasets
 train_x, train_y = MNIST(split=:train)[:]
 test_x , test_y  = MNIST(split=:test)[:]
 
-train_x = transform_mnist(train_x, 14, 60000)
-test_x = transform_mnist(test_x, 14, 10000)
-
-train_x = permutedims(train_x, [3,1,2])
-test_x = permutedims(test_x, [3,1,2])
-
+new_size = (14,14)
+train_x = transform_mnist(train_x, new_size)
+test_x = transform_mnist(test_x, new_size)
 
 
 # PARAMS
@@ -30,12 +27,11 @@ _params = Dict{Symbol,Any}(
     ,:test_length       => 10000
     ,:train_f           => __do_train_MWESN_mnist!
     ,:test_f            => __do_test_MWESN_mnist!
-    ,:input_size        => 28*28
+    ,:input_size        => new_size[1]*new_size[2]
     ,:train_data        => train_x
     ,:train_labels      => train_y
     ,:test_data         => test_x
     ,:test_labels       => test_y
-    # ,:steps             => [1]
 )
 
     
@@ -55,7 +51,6 @@ mwesn=[]
 
     sd = 7522#42#rand(1:10000)
     Random.seed!(sd)
-    # _params[:layers] = [(2,300)]; sd=776; Random.seed!(sd) # error 0.2875
 
     _params_esn = Dict{Symbol,Any}(
         :W_scaling => [rand(Uniform(0.5,1.5),length(layer) ) for layer in _params[:layers]]
@@ -88,7 +83,6 @@ mwesn=[]
     end
     display(par)
 
-    include("../../ESN.jl")
     tm = @elapsed begin
         global mwesn = new_mwesn(_params_esn,_params)
         tm_train = @elapsed begin
@@ -120,7 +114,6 @@ mwesn=[]
         , title="Confusion matrix"
         , xlabel="Predicted"
         , ylabel="Target"
-        # , xticks=0:9
         , set_yticklabels=string.(_params[:classes])
         , labels=string.(_params[:classes])                                                          
         , fc=cgrad([:white,:dodgerblue4])
