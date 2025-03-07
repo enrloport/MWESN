@@ -216,7 +216,7 @@ function confusion_matrix(classes::Vector{String}, predictions::Vector{Int8}, ta
     len = length(classes)
 
     mtx = zeros(len,len)
-    for i in 1:length(targets)
+    for i in 1:length(predictions)
         t,p = targets[i], predictions[i]
         mtx[t+1,p+1] += 1
     end
