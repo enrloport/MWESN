@@ -29,6 +29,7 @@ end
 Base.@kwdef mutable struct MWESN
     layers          ::Vector{layerESN}
     input_to_all    ::Bool          = false
+    constant_term   ::Bool          = true
     train_function  ::Function      = __do_train_MWESN_cloudcast!
     test_function   ::Function      = __do_test_MWESN_cloudcast_pixel!
     H               ::Mtx           = zeros(1,1)

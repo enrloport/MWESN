@@ -13,9 +13,11 @@ function __do_test_MWESN!(mwesn, args::Dict)
     input           = f(ut)
     extra_inputs    = keys(tde) != [] ? [ tde[k][1] for k in keys(tde) ] : []
     states          = [ _e.x for l in mwesn.layers for _e in l.esns if _e.output_active]
-    constant_term   = f([1])
+    constant_term   = mwesn.constant_term ? f([1]) : Array{Float16}(undef, 0)
     x               = vcat(input, extra_inputs... , states...  , constant_term )
-    y               = mwesn.W_out * x
+    y               = Array(mwesn.W_out * x)
+    # println("mwesny",typeof( mwesn.Y))
+    # println(typeof(y))
     push!(mwesn.Y, y[1])
 
 
@@ -26,9 +28,9 @@ function __do_test_MWESN!(mwesn, args::Dict)
         input           = f(ut)
         extra_inputs    = keys(tde) != [] ? [ tde[k][t] for k in keys(tde) ] : []
         states          = [ _e.x for l in mwesn.layers for _e in l.esns if _e.output_active]
-        constant_term   = f([1])
+        constant_term   = mwesn.constant_term ? f([1]) : Array{Float16}(undef, 0)
         x               = vcat(input, extra_inputs... , states...  , constant_term )
-        y               = mwesn.W_out * x
+        y               = Array(mwesn.W_out * x)
 
         push!(mwesn.Y, y[1])
 

@@ -4,7 +4,8 @@ function __do_test_MWESN_cloudcast_pixel!(mwE, args::Dict)
     classes_Y     = Dict( stp => Array{Tuple{Float64,Int,Int}}[] for stp in args[:steps])
     wrong_class   = Dict( stp => [] for stp in args[:steps])
     mwE.Y         = Dict( stp => [] for stp in args[:steps])
-    f             = args[:gpu] ? (u) -> CuArray(reshape(u, :, 1)) : (u) -> reshape(u, :, 1)
+    # f             = args[:gpu] ? (u) -> CuArray(reshape(u, :, 1)) : (u) -> reshape(u, :, 1)
+    f             = args[:gpu] ? (u) -> CuArray(u) : (u) -> u
     at            = :attention_inputs in keys(args) ? (dic, t) -> Dict( k => dic[k][t,:] for k in keys(dic) ) : (dic, t) -> Dict()
     tde           = :test_data_extra in keys(args) ? args[:test_data_extra] : Dict()
 
@@ -15,7 +16,7 @@ function __do_test_MWESN_cloudcast_pixel!(mwE, args::Dict)
         input           = f(ut)
         extra_inputs    = keys(tde) != [] ? [ tde[k][t] for k in keys(tde) ] : []
         states          = [ _e.x for l in mwE.layers for _e in l.esns if _e.output_active]
-        constant_term   = f([1])
+        constant_term   = mwesn.constant_term ? f([1]) :  Array{Float16}(undef, 0)
         x               = vcat(input, extra_inputs... , states...  , constant_term )
         pairs           = Dict( stp => [] for stp in args[:steps])
 

@@ -20,8 +20,7 @@ function __fill_H_MWESN_cloudcast!(mwesn, args::Dict )
         input           = f(ut)
         extra_inputs    = keys(tde) != [] ? [ tde[k][t] for k in keys(tde) ] : []
         states          = [ _e.x for l in mwesn.layers for _e in l.esns if _e.output_active]
-        constant_term   = f([1])
-
+        constant_term   = mwesn.constant_term ? f([1]) : Array{Float16}(undef, 0)
         mwesn.H[:,t_in] = vcat(input, extra_inputs... , states...  , constant_term )
     end
 end
@@ -55,7 +54,8 @@ end
 function __do_train_MWESN_cloudcast!(mwesn, args)
     num               = args[:train_length]-args[:initial_transient]
     extra_size        = :extra_data_size in keys(args) ? sum(args[:extra_data_size]) : 0
-    mwesn.H             = zeros( mwesn.output_size + args[:input_size] + extra_size + 1, num)
+    constant_term     = mwesn.constant_term ? 1 : 0
+    mwesn.H           = zeros( mwesn.output_size + args[:input_size] + extra_size + constant_term, num)
     reset_function    = (x) -> zeros(x,1)
 
     if args[:gpu]

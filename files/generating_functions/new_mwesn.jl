@@ -21,6 +21,8 @@ function new_mwesn(_params_esn, _params)
         k => [(mwesn.esns[cn[1]],cn[2]) for cn in p[:connections][k] ]
         for k in keys(p[:connections])
         )
-
+    if :constant_term in keys(p) 
+        mwesn.constant_term =  p[:constant_term]
+    end
     return mwesn
 end

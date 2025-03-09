@@ -40,7 +40,8 @@ function __do_test_MWESN_cloudcast_image!(mwE, args::Dict)
             for t in 1:test_length
                 ut      = reshape(args[:test_data][t,:,:], :, 1)
                 _step(mwE, ut, f)
-                x       = vcat(f(args[:test_data][t,:,:]), [ _e.x for l in mwE.layers for _e in l.esns if _e.output_active]...  , f([1]) )
+                constant_term   = mwesn.constant_term ? f([1]) : Array{Float16}(undef, 0)
+                x       = vcat(f(args[:test_data][t,:,:]), [ _e.x for l in mwE.layers for _e in l.esns if _e.output_active]...  , constant_term )
                 pairs   = Dict( stp => [] for stp in args[:steps])
 
                 for stp in args[:steps]
