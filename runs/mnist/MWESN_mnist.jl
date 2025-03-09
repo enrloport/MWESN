@@ -54,13 +54,13 @@ for _ in 1:repit
     Random.seed!(sd)
 
     _params_esn = Dict{Symbol,Any}(
-        :W_scaling => [rand(Uniform(0.5,1.5),length(layer) ) for layer in _params[:layers]]
-        ,:alpha    => [rand(Uniform(0.3,0.7),length(layer) ) for layer in _params[:layers]]
-        ,:density  => [rand(Uniform(0.1,0.3),length(layer) ) for layer in _params[:layers]]
-        ,:Win_dens => [rand(Uniform(0.1,0.5),length(layer) ) for layer in _params[:layers]]
-        ,:rho      => [rand(Uniform(1.0,4.0),length(layer) ) for layer in _params[:layers]]
+        :W_scaling => [[1.0 for _ in 1:length(layer)] for layer in _params[:layers]]
+        ,:alpha    => [[0.7 for _ in 1:length(layer)] for layer in _params[:layers]]
+        ,:density  => [[0.2 for _ in 1:length(layer)] for layer in _params[:layers]]
+        ,:Win_dens => [[1.0 for _ in 1:length(layer)] for layer in _params[:layers]]
+        ,:rho      => [rand(Uniform(0.5,1.5),length(layer) ) for layer in _params[:layers]]
         ,:sigma    => [rand(Uniform(0.5,1.5),length(layer) ) for layer in _params[:layers]]
-        ,:sgmds    => [ [sigmoid for _ in 1:length(_params[:layers][i])] for i in 1:length(_params[:layers]) ]
+        ,:sgmds    => [[tanh for _ in 1:length(_params[:layers][i])] for i in 1:length(_params[:layers]) ]
     )
 
     par = Dict(
