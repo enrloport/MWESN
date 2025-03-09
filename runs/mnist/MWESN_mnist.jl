@@ -13,12 +13,13 @@ test_x = transform_mnist(test_x, new_size)
 
 
 # PARAMS
-repit = 500
+repit = 1 
 
 _params = Dict{Symbol,Any}(
-     :gpu               => true
+     :gpu               => false
     ,:wb                => true
     ,:confusion_matrix  => true
+    ,:constant_term     => false
     ,:wb_logger_name    => "MWESN_mnist__GPU"
     ,:classes           => [0,1,2,3,4,5,6,7,8,9]
     ,:beta              => 1.0e-8
@@ -91,12 +92,13 @@ for _ in 1:repit
     end
 
     par["Error"] = mwesn.error
-    par["confusion_matrix"] = Wandb.wandb.plot.confusion_matrix(
-            y_true = mwesn.Y_target[1:_params[:test_length]], preds = [x[1] for x in mwesn.Y], class_names = _params[:classes]
-        )
+    
 
     if _params[:wb]
         _params[:lg] = wandb_logger(_params[:wb_logger_name])
+        par["confusion_matrix"] = Wandb.wandb.plot.confusion_matrix(
+            y_true = mwesn.Y_target[1:_params[:test_length]], preds = [x[1] for x in mwesn.Y], class_names = _params[:classes]
+        )
         Wandb.log(_params[:lg], par )
     end
 
@@ -104,8 +106,8 @@ for _ in 1:repit
         close(_params[:lg])
     end
 
-
-
 end
 
-# EOF
+mwesn.error
+
+# EOF                                                                                                                                                                                                                                                       
