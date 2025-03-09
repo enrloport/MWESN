@@ -3,11 +3,11 @@ include("../../../ESN.jl")
 # DATASET
 dir     = "data/"
 file    = "TrainCloud.nc"
-all     = ncread(dir*file, "__xarray_dataarray_variable__")
+all1     = ncread(dir*file, "__xarray_dataarray_variable__")
 file2   = "TestCloud.nc"
 all2    = ncread(dir*file2, "__xarray_dataarray_variable__")
 
-_all = cat(all,all2, dims=(1))
+_all = cat(all1,all2, dims=(1))
 
 # PARAMS
 tp = (30,30)
