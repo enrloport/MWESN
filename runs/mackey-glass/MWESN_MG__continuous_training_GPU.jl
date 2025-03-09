@@ -10,9 +10,10 @@ _all    = readdlm(dir*file)
 # PARAMS
 repit = 1
 _params = Dict{Symbol,Any}(
-     :gpu               => false
+     :gpu               => true
     ,:wb                => false
     ,:confusion_matrix  => false
+    ,:constant_term     => true
     ,:wb_logger_name    => "ESN_MG_continuous_training_CPU"
     ,:beta              => 1.0e-8
     ,:initial_transient => 100
@@ -32,10 +33,7 @@ if _params[:wb] using Logging, Wandb end
 
 
 _params[:layers] = [ [1000] ]
-_params[:connections] = Dict(
-#    6 => [(1,0.842),(2,1.0),(3,0.121),(4,0.5652),(5,1.0)]
-#   ,7 => [(1,-0.7734),(2,-1.0),(3,0.6085),(4,-0.05637),(5,0.2123)]
-)
+_params[:connections] = Dict()
 _params[:active_inputs] = [1]
 _params[:active_outputs]= [1]
 
@@ -90,7 +88,8 @@ function all(b)
     function new_wout(mwesn,i,j)
         H             = mwesn.H[:,i:j]
         cudamatrix    = _params[:gpu] ? CuArray : Matrix
-        return cudamatrix(transpose((H*transpose(H) + mwesn.beta*I) \ (H*_params[:train_labels][i:j] )))
+        f             = _params[:gpu] ? (u) -> CuArray(u) : (u) -> u
+        return cudamatrix(transpose((H*transpose(H) + mwesn.beta*I) \ (H*f(_params[:train_labels][i:j]) )))
     end
 
     wouts = []
@@ -140,7 +139,6 @@ function all(b)
 
     do_plot()
 end
-
 
 all(125)
 
