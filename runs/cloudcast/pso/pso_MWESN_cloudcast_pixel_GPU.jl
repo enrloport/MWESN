@@ -8,7 +8,7 @@ file    = "TrainCloud.nc"
 data_train = ncread(dir*file, "__xarray_dataarray_variable__")
 file2 = "TestCloud.nc"
 data_test = ncread(dir*file2, "__xarray_dataarray_variable__")
-all = cat(data_train, data_test, dims=1)
+_all = cat(data_train, data_test, dims=1)
 
 
 # PARAMS
@@ -29,12 +29,12 @@ _params = Dict{Symbol,Any}(
     ,:target_pixel      => tp
     ,:radius            => 3
     ,:steps             => [1,2,3,4]
-    ,:data              => all
+    ,:data              => _all
 )
 _params[:input_size] = ((_params[:radius]*2)+1)^2
 
 _params[:train_data],  _params[:train_labels],  _params[:test_data],  _params[:test_labels] = split_data_cloudcast(
-    data              = all
+    data              = _all
     , train_length    = _params[:train_length]
     , test_length     = _params[:test_length]
     , target_pixel    = _params[:target_pixel]
@@ -95,8 +95,8 @@ function fitness(_x)
         , "Rhos"                => _params_esn[:rho]
         , "Sigmas"              => _params_esn[:sigma]
         , "W_scalings"          => _params_esn[:W_scaling]
-	, "Active inputs"       => _params[:active_inputs]
-	, "Active outputs"      => _params[:active_outputs]
+	    , "Active inputs"       => _params[:active_inputs]
+	    , "Active outputs"      => _params[:active_outputs]
         )
     edges = Dict( "Edge "*string(i) => _u[i] for i in 1:length(_u) )
 
@@ -122,39 +122,42 @@ function fitness(_x)
 end
 
 
+function find_weights(_params,pso_dict)
 
-for _ in 1:repit
-    _params[:seed] = rand(1:100000)
+    for _ in 1:repit
+        _params[:seed] = rand(1:100000)
 
-    if _params[:wb]
-        _params[:lg] = wandb_logger(_params[:wb_logger_name])
-        Wandb.log(_params[:lg], pso_dict )
-    else
-        display(pso_dict)
-        println(" ")
+        if _params[:wb]
+            _params[:lg] = wandb_logger(_params[:wb_logger_name])
+            Wandb.log(_params[:lg], pso_dict )
+        else
+            display(pso_dict)
+            println(" ")
+        end
+
+        pso = PSO(;information=Metaheuristics.Information()
+            ,N  = pso_dict["N"]
+            ,C1 = pso_dict["C1"]
+            ,C2 = pso_dict["C2"]
+            ,ω  = pso_dict["w"]
+            ,options = Options(iterations=pso_dict["max_iter"])
+        )
+
+        lx = (ones(10)').*-1
+        ux = ones(10)'
+        lx_ux = vcat(lx,ux)
+
+        res = optimize( fitness, lx_ux, pso )
+
+        if _params[:wb]
+            close(_params[:lg])
+        end
+
     end
-
-    pso = PSO(;information=Metaheuristics.Information()
-        ,N  = pso_dict["N"]
-        ,C1 = pso_dict["C1"]
-        ,C2 = pso_dict["C2"]
-        ,ω  = pso_dict["w"]
-        ,options = Options(iterations=pso_dict["max_iter"])
-    )
-
-    lx = (ones(10)').*-1
-    ux = ones(10)'
-    lx_ux = vcat(lx,ux)
-
-    res = optimize( fitness, lx_ux, pso )
-
-    if _params[:wb]
-        close(_params[:lg])
-    end
-
+    return mwesn
 end
+
+final_model = find_weights(_params,pso_dict)
 
 
 # EOF
-
-
