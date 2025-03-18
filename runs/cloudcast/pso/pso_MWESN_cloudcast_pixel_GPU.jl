@@ -157,7 +157,7 @@ function find_weights(_params,pso_dict)
     return mwesn
 end
 
-final_model = find_weights(_params,pso_dict)
+# final_model = find_weights(_params,pso_dict)
 
 
 # EOF
