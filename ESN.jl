@@ -34,6 +34,7 @@ Data= Union{DataFrame, Mtx, Vector, Array, CuArray}
 # Includes
 include.( filter(contains(r".jl$"), readdir("./files/"; join=true)))
 include.( filter(contains(r".jl$"), readdir("./files/cloudcast_functions"; join=true)))
+include.( filter(contains(r".jl$"), readdir("./files/ert_auxiliar_functions"; join=true)))
 include.( filter(contains(r".jl$"), readdir("./files/generating_functions"; join=true)))
 include.( filter(contains(r".jl$"), readdir("./files/log_functions"; join=true)))
 include.( filter(contains(r".jl$"), readdir("./files/sigmoid_functions"; join=true)))
