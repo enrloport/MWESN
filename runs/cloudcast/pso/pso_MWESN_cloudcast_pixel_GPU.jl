@@ -17,6 +17,7 @@ repit = 1
 _params = Dict{Symbol,Any}(
      :gpu               => true
     ,:wb                => false
+    ,:pso_log           => false
     ,:confusion_matrix  => false
     ,:wb_logger_name    => "pso_MWESN_cloudcast__pixel_"*string(tp)*"__GPU"
     ,:classes           => [0,1,2,3,4,5,6,7,8,9,10]
@@ -113,7 +114,9 @@ function fitness(_x)
     _params[:train_time] = tm_train
     _params[:test_time]  = tm_test
 
-    full_log(_params,_params_esn,mwesn,extra=merge(par,edges))
+    if haskey(_params,:pso_log) && _params[:pso_log]
+        full_log(_params,_params_esn,mwesn,extra=merge(par,edges))
+    end
 
     printime = _params[:gpu] ? "Time GPU: " * string(tm) :  "Time CPU: " * string(tm) 
     println("Error: ", mwesn.error, "\n", printime  )
@@ -130,9 +133,6 @@ function find_weights(_params,pso_dict)
         if _params[:wb]
             _params[:lg] = wandb_logger(_params[:wb_logger_name])
             Wandb.log(_params[:lg], pso_dict )
-        else
-            display(pso_dict)
-            println(" ")
         end
 
         pso = PSO(;information=Metaheuristics.Information()
