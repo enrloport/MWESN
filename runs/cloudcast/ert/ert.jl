@@ -1,7 +1,6 @@
 include("../../../ESN.jl")
 include("../pso/pso_MWESN_cloudcast_pixel_GPU.jl")
 
-
 # DATASET
 dir           = "data/"
 file          = "TrainCloud.nc"
@@ -11,11 +10,20 @@ data_train    = ncread(dir*file, "__xarray_dataarray_variable__")
 data_test     = ncread(dir*file2, "__xarray_dataarray_variable__")
 _all          = cat(data_train, data_test, dims=1)
 
+pso_dict = Dict(
+    "N"  => 2
+    ,"C1" => 1.5
+    ,"C2" => 1.2
+    ,"w"  => 0.5
+    ,"max_iter" => 2
+)
+
 _params = Dict{Symbol,Any}(
      :gpu               => true
     ,:wb                => false
     ,:confusion_matrix  => false
-    ,:wb_logger_name    => "pso_MWESN_cloudcast__pixel_"*string(tp)*"__GPU"
+    ,:pso_log           => false
+    ,:wb_logger_name    => "ERT__GPU"
     ,:classes           => [0,1,2,3,4,5,6,7,8,9,10]
     ,:beta              => 1.0e-8
     ,:initial_transient => 10
@@ -27,121 +35,75 @@ _params = Dict{Symbol,Any}(
     ,:steps             => [1,2,3,4]
     ,:data              => _all
 )
-if _params[:gpu] CUDA.allowscalar(false) end
-if _params[:wb] using Logging, Wandb end
 
 dim2                    = size(_params[:data])[2]
 dim3                    = size(_params[:data])[3]
-_params[:dim2_range]    = 4:6 #1+_params[:radius]:dim2-_params[:radius]
-_params[:dim3_range]    = 4:6 #1+_params[:radius]:dim3-_params[:radius]
+_params[:dim2_range]    = 1+_params[:radius]:dim2-_params[:radius]
+_params[:dim3_range]    = 1+_params[:radius]:dim3-_params[:radius]
 _params[:input_size]    = ((_params[:radius]*2)+1)^2
 
+_params[:RP] = []     # Set of representative pixels
+_params[:RM] = Dict() # Set of representative models
+
+# Dict of Allocations: Position of pixel => [RM, current_error]
+_params[:A] = Dict((i,j) => [0, 2.0] for i in _params[:dim2_range] for j in _params[:dim3_range])
 
 
-pso_dict = Dict(
-    "N"  => 2
-    ,"C1" => 1.5
-    ,"C2" => 1.2
-    ,"w"  => 0.5
-    ,"max_iter" => 2
-)
+
+if _params[:gpu] CUDA.allowscalar(false) end
+if _params[:wb] using Logging, Wandb end
 
 
-function update_data(_params)
-    return split_data_cloudcast(
-        data              = _params[:data]
-        , train_length    = _params[:train_length]
-        , test_length     = _params[:test_length]
-        , target_pixel    = _params[:target_pixel]
-        , radius          = _params[:radius]
-        , steps           = _params[:steps]
-        )
-end
-
-function reset_state!(model, args)
-    sz_train = size(args[:train_data])[1]
-    i_t      = args[:initial_transient]
-    f        = args[:gpu] ? (u) -> CuArray(u) : (u) -> u
-
-    for layer in model.layers, e in layer.esns
-            e.x = e.x .* 0
-    end
-
-    for it in sz_train-(i_t):sz_train
-        ut = reshape(args[:train_data][it,:,:], :, 1)
-        _step(model, ut, f)
-    end
-end
-
-
-# function ert(_params; threshold = 0.4)
-    # Set of representative pixels
-    RP = []
-    # Set of representative models
-    RM = Dict()
-    # Dict of Asignations: Position of pixel => [RM, current_error]
-    A = Dict((i,j) => [0, 2.0] for i in _params[:dim2_range] for j in _params[:dim3_range])
-
+function ert(_params; threshold = 0.2)
     # Initialize the error to a large value
-    max_error = Inf
+    mean_error = Inf
 
-    # First Iter
+    # First Iteration
     # Select a random pixel from the cloudcast dataset and update train and test datasets
     _params[:target_pixel] = rand(_params[:dim2_range]), rand(_params[:dim3_range])
-    _params[:train_data],  _params[:train_labels],  _params[:test_data],  _params[:test_labels] = update_data(_params)
-    push!(RP, _params[:target_pixel])
+    _params[:train_data],  _params[:train_labels],  _params[:test_data],  _params[:test_labels] = update_datasets(_params)
+    push!(_params[:RP], _params[:target_pixel])
+
+    println("\nNew Representative pixel: ", string(_params[:target_pixel]))
 
     # Train the first RM on the selected pixel
-    model = find_weights(_params,pso_dict)
-    model_id = length(keys(RM))+1
-    RM[model_id] = model
+    model                   = find_weights(_params,pso_dict)
+    model_id                = length(keys(_params[:RM]))+1
+    _params[:RM][model_id]  = model
 
-    for p in keys(A)
-        _params[:target_pixel] = p
-        println(p)
-        _params[:train_data],  _params[:train_labels],  _params[:test_data],  _params[:test_labels] = update_data(_params)
+    update_A!(model_id, _params)
 
-        # Reset model state before test it in pixel
-        reset_state!(model, _params)
+    mean_error = mean_error_A(_params[:A])
 
-        # Test model in pixel
-        model.test_function(model,_params)
+    # Iterate until the stop condition is reached
 
-        # Check if the model performs best that others
-        if A[p][2] > model.error[4]
-            println("New asignation", string(p), string(model_id))
-            A[p] = [model_id, model.error[4]]
-        end
+    while mean_error > threshold
+        # Select a pixel with the maximum error
+        p_max = find_pmax(_params)
+        println("\nNew Representative pixel: ", string(p_max))
+
+        _params[:target_pixel] = p_max
+        _params[:train_data],  _params[:train_labels],  _params[:test_data],  _params[:test_labels] = update_datasets(_params)
+
+        # Train a new RM on the selected pixel
+        model                   = find_weights(_params,pso_dict)
+        model_id                = length(keys(_params[:RM]))+1
+        _params[:RM][model_id]  = model
+
+        update_A!(model_id, _params)
+
+        mean_error = mean_error_A(_params[:A])
+
+        println("Error -> ", mean_error)
     end
-
-    println("END")
-    # Test the model in all pixels
-
-    # return model
-
-    # while max_error > threshold
-    #     # Select a random pixel from the cloudcast dataset
-    #     _params[:target_pixel] = rand(_params[:dim2_range]), rand(_params[:dim3_range])
-    #     _params[:train_data],  _params[:train_labels],  _params[:test_data],  _params[:test_labels] = update_data(_params)
-        
-    #     # Train the MWESN model on the selected pixel
-    #     model = train_model(cloudcast[random_pixel])
-        
-    #     # Evaluate the model on the entire dataset
-    #     errors = evaluate_model(model, cloudcast)
-        
-    #     # Find the pixel with the maximum error
-    #     max_error, max_error_pixel = findmax(errors)
-        
-    #     # Train a new model on the pixel with the maximum error
-    #     model = train_model(cloudcast[max_error_pixel])
-    # end
-# end
+end
 
 
+ert(_params)
 
-m = ert(_params)
-
-
+display(_params[:RP])
+display(_params[:RM])
+display(_params[:A])
+display(mean_error_A(_params[:A]))
 
 # EOF
