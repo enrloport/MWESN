@@ -13,6 +13,8 @@ data/
 nohup*.out
 csv_reader.jl
 wandb_key.jl
+confusion_matrix*
+read_*
 
 # Backup Files
 *BU.jl
